@@ -1,4 +1,7 @@
+"""Tests for fuzzer data models."""
 from __future__ import annotations
+
+from dataclasses import asdict
 
 from scripts.fuzzer.models import FuzzerRunAnalysis, FuzzerRunContext, FuzzerSignal
 
@@ -13,15 +16,16 @@ def test_context_defaults():
                           conclusion="failure", head_sha="h")
     assert ctx.tested_valkey_sha is None
     assert ctx.node_logs == {}
+    assert ctx.raw_job_log == ""
 
 
-def test_analysis_to_dict():
+def test_analysis_roundtrip_via_asdict():
     a = FuzzerRunAnalysis(
         repo="r", workflow_file="w", run_id=1, run_url="u",
         conclusion="failure", head_sha="h", overall_status="anomalous",
         triage_verdict="likely-core-valkey-bug", summary="crash found",
         anomalies=[FuzzerSignal("crash", "critical", "x")],
     )
-    d = a.to_dict()
+    d = asdict(a)
     assert d["run_id"] == 1
     assert d["anomalies"][0]["title"] == "crash"

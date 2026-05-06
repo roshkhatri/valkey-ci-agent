@@ -1,8 +1,11 @@
+"""Tests for fuzzer artifact client."""
 from __future__ import annotations
 
 import io
 import zipfile
 from unittest.mock import MagicMock
+
+import pytest
 
 from scripts.fuzzer.artifacts import ArtifactClient, _extract_zip
 
@@ -14,12 +17,17 @@ def test_extract_zip_valid():
     assert _extract_zip(buf.getvalue()) == {"file.txt": b"hello"}
 
 
-def test_extract_zip_invalid():
+def test_extract_zip_invalid_returns_empty():
     assert _extract_zip(b"not a zip") == {}
 
 
-def test_extract_zip_empty():
+def test_extract_zip_empty_bytes():
     assert _extract_zip(b"") == {}
+
+
+def test_client_requires_token():
+    with pytest.raises(ValueError, match="token is required"):
+        ArtifactClient(MagicMock(), token="")
 
 
 def test_list_run_artifacts():

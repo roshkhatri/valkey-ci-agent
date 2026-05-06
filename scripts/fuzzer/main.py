@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Analyze recent fuzzer runs and optionally publish issues."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target-repo", default="valkey-io/valkey-fuzzer")
     parser.add_argument("--workflow-file", default="fuzzer-run.yml")
@@ -39,6 +40,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     token = args.target_token or os.environ.get("TARGET_TOKEN", "")
+    if not token:
+        parser.error("--target-token or TARGET_TOKEN env var is required")
+
     gh = Github(auth=Auth.Token(token))
     client = ArtifactClient(gh, token=token)
     analyzer = FuzzerRunAnalyzer(gh, github_token=token, artifact_client=client)
@@ -53,8 +57,8 @@ def main(argv: list[str] | None = None) -> int:
     for run in runs:
         entry: dict[str, Any] = {
             "run_id": run.id,
-            "conclusion": getattr(run, "conclusion", ""),
-            "html_url": getattr(run, "html_url", ""),
+            "conclusion": run.conclusion or "",
+            "html_url": run.html_url,
         }
 
         if args.dry_run:
@@ -78,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         except Exception as exc:
             entry["action"] = "error"
             entry["error"] = str(exc)
-            logger.error("Failed to analyze run %s: %s", run.id, exc)
+            logger.warning("Failed to analyze run %s: %s", run.id, exc)
 
         results.append(entry)
 

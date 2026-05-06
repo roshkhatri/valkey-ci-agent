@@ -13,6 +13,15 @@ if sys.version_info >= (3, 9):
 
 
 @needs_39
+def test_requires_token(capsys, monkeypatch):
+    monkeypatch.delenv("TARGET_TOKEN", raising=False)
+    with pytest.raises(SystemExit):
+        fuzzer_main_mod.main([])
+    err = capsys.readouterr().err
+    assert "target-token" in err or "TARGET_TOKEN" in err
+
+
+@needs_39
 def test_dry_run(monkeypatch):
     monkeypatch.setenv("TARGET_TOKEN", "fake")
     mock_gh_cls = MagicMock()

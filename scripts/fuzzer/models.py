@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -32,7 +32,7 @@ class FuzzerRunContext:
     scenario_yaml: str | None = None
     structured_logs: dict[str, dict[str, Any]] = field(default_factory=dict)
     node_logs: dict[str, str] = field(default_factory=dict)
-    raw_job_log: str | None = None
+    raw_job_log: str = ""
 
 
 @dataclass
@@ -57,6 +57,3 @@ class FuzzerRunAnalysis:
     reproduction_hint: str | None = None
     incident_fingerprint: str | None = None
     suggested_labels: list[str] = field(default_factory=list)
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)

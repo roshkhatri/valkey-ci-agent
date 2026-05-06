@@ -23,8 +23,7 @@ def compute_fingerprint(
 ) -> str:
     """Stable hash grouping repeated failures by shape, not run ID."""
     parts = [repo.lower(), workflow_file.lower(), (root_cause_category or "").lower()]
-    for signal in sorted(
-        {f"{s.title}:{s.evidence}" for s in anomalies if s.title or s.evidence}
-    )[:8]:
-        parts.append(_VOLATILE_RE.sub("_", signal.lower()))
+    shapes = sorted({f"{s.title}:{s.evidence}" for s in anomalies})[:8]
+    for shape in shapes:
+        parts.append(_VOLATILE_RE.sub("_", shape.lower()))
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:20]

@@ -11,19 +11,13 @@ needs_39 = pytest.mark.skipif(sys.version_info < (3, 9), reason="requires 3.9+")
 
 if sys.version_info >= (3, 9):
     from scripts.fuzzer.analyzer import (
-        _clean_log,
-        _find_valkey_sha,
+        _dedupe_signals,
+        _find_sha,
         _load_artifacts,
+        _parse_claude_response,
         _scan_logs,
         _triage,
     )
-
-
-@needs_39
-def test_clean_log():
-    raw = "x\ty\t2024-01-01T00:00:00.000Z \x1b[31mERROR\x1b[0m msg"
-    assert "ERROR msg" in _clean_log(raw)
-    assert "\x1b" not in _clean_log(raw)
 
 
 @needs_39
@@ -58,10 +52,16 @@ def test_scan_logs_structured_results():
 
 
 @needs_39
-def test_find_valkey_sha():
-    assert _find_valkey_sha({"valkey_sha": "abc1234"}) == "abc1234"
-    assert _find_valkey_sha({"nested": {"tested_valkey_sha": "def5678"}}) == "def5678"
-    assert _find_valkey_sha({"unrelated": "data"}) is None
+def test_find_sha():
+    assert _find_sha({"valkey_sha": "abc1234"}) == "abc1234"
+    assert _find_sha({"nested": {"tested_valkey_sha": "def5678"}}) == "def5678"
+    assert _find_sha({"unrelated": "data"}) is None
+
+
+@needs_39
+def test_find_sha_rejects_non_sha():
+    # Key matches but value isn't a valid SHA.
+    assert _find_sha({"valkey_sha": "not-a-sha"}) is None
 
 
 @needs_39
@@ -87,10 +87,18 @@ def test_triage_normal():
 
 
 @needs_39
-def test_triage_critical():
+def test_triage_critical_bug_indicator():
     status, verdict = _triage([FuzzerSignal("Node crash or assertion", "critical", "x")])
     assert status == "anomalous"
     assert verdict == "likely-core-valkey-bug"
+
+
+@needs_39
+def test_triage_critical_non_indicator():
+    # A critical signal that's NOT in bug indicators set.
+    status, verdict = _triage([FuzzerSignal("custom validation failed", "critical", "x")])
+    assert status == "anomalous"
+    assert verdict == "possible-core-valkey-bug"
 
 
 @needs_39
@@ -98,3 +106,39 @@ def test_triage_warning():
     status, verdict = _triage([FuzzerSignal("something", "warning", "x")])
     assert status == "warning"
     assert verdict == "possible-core-valkey-bug"
+
+
+@needs_39
+def test_dedupe_signals():
+    signals = [
+        FuzzerSignal("a", "critical", "x"),
+        FuzzerSignal("a", "critical", "x"),
+        FuzzerSignal("b", "warning", "y"),
+    ]
+    assert len(_dedupe_signals(signals)) == 2
+
+
+@needs_39
+def test_parse_claude_response_plain_json():
+    assert _parse_claude_response('{"overall_status": "normal"}')["overall_status"] == "normal"
+
+
+@needs_39
+def test_parse_claude_response_with_prose():
+    text = 'Here is the analysis: {"overall_status": "anomalous", "summary": "x"} Thanks!'
+    assert _parse_claude_response(text)["overall_status"] == "anomalous"
+
+
+@needs_39
+def test_parse_claude_response_stream_json():
+    stream = '\n'.join([
+        '{"type": "progress", "data": "thinking"}',
+        '{"type": "result", "result": "{\\"overall_status\\": \\"warning\\"}"}',
+    ])
+    assert _parse_claude_response(stream)["overall_status"] == "warning"
+
+
+@needs_39
+def test_parse_claude_response_rejects_garbage():
+    with pytest.raises(ValueError):
+        _parse_claude_response("no json here at all")
