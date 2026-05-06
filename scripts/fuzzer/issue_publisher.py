@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Any
 
 from scripts.common.github_client import retry_github_call
 from scripts.common.publish_guard import check_publish_allowed
@@ -18,7 +19,7 @@ _OCCURRENCES_RE = re.compile(r"<!-- valkey-ci-agent:occurrences:(\d+) -->")
 class FuzzerIssuePublisher:
     """Creates or updates issues on the target repo for anomalous runs."""
 
-    def __init__(self, github_client: object, *, retries: int = 3) -> None:
+    def __init__(self, github_client: Any, *, retries: int = 3) -> None:
         self._gh = github_client
         self._retries = retries
 
