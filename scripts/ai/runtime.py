@@ -18,6 +18,7 @@ from scripts.ai.claude_code import (
 
 AgentProfileName = Literal[
     "conflict_resolve_edit_only",
+    "fuzzer_analysis_readonly",
 ]
 
 
@@ -61,6 +62,15 @@ AGENT_PROFILES: dict[AgentProfileName, AgentProfile] = {
         max_turns=240,
         writes_allowed=True,
         output_schema="edited-files",
+    ),
+    "fuzzer_analysis_readonly": AgentProfile(
+        name="fuzzer_analysis_readonly",
+        allowed_tools="Read,Grep,Glob",
+        timeout=1200,
+        effort="max",
+        max_turns=200,
+        writes_allowed=False,
+        output_schema="text",
     ),
 }
 
