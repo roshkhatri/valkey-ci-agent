@@ -219,7 +219,7 @@ Analyze this run. Read artifacts and source as needed. Return ONLY valid JSON:
   "overall_status": "normal|warning|anomalous",
   "triage_verdict": "likely-core-valkey-bug|possible-core-valkey-bug|expected-chaos-noise|environmental-or-infra|needs-human-triage",
   "root_cause_category": "short-label or null",
-  "summary": "one-line maintainer-facing summary",
+  "summary": "2-3 sentence maintainer-facing summary explaining what happened AND why it indicates a bug (or why it's noise)",
   "anomalies": [{{"title": "...", "severity": "warning|critical", "evidence": "..."}}],
   "normal_signals": ["..."],
   "reproduction_hint": "command or null"
